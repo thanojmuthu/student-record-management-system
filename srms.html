@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h2, h3 {
+            color: #333;
+        }
+        input, button {
+            margin: 5px;
+            padding: 5px;
+        }
+        #dashboard, #addForm, #updateSection, #deleteSection, #searchSection {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #aaa;
+            background-color: #fff;
+        }
+        #displaySection {
+            display: block; /* always visible */
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #aaa;
+            background-color: #fff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ====== LOGIN PAGE ====== -->
+<div id="loginPage">
+    <h2>Login</h2>
+    <input type="text" id="loginUser" placeholder="Username">
+    <input type="password" id="loginPass" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- ====== DASHBOARD ====== -->
+<div id="dashboard">
+    <h2 id="roleHeading"></h2>
+
+    <!-- ADD STUDENT -->
+    <div id="addForm">
+        <h3>Add Student</h3>
+        <input type="text" id="roll" placeholder="Roll">
+        <input type="text" id="name" placeholder="Name">
+        <input type="number" id="mark" placeholder="Mark">
+        <button onclick="addStudent()">Add</button>
+    </div>
+
+    <!-- UPDATE STUDENT -->
+    <div id="updateSection">
+        <h3>Update Student</h3>
+        <input type="text" id="updateRoll" placeholder="Roll to Update">
+        <input type="text" id="updateName" placeholder="New Name">
+        <input type="number" id="updateMark" placeholder="New Mark">
+        <button onclick="updateStudent()">Update</button>
+    </div>
+
+    <!-- DELETE STUDENT -->
+    <div id="deleteSection">
+        <h3>Delete Student</h3>
+        <input type="text" id="deleteRoll" placeholder="Roll to Delete">
+        <button onclick="deleteStudent()">Delete</button>
+    </div>
+
+    <!-- SEARCH STUDENT -->
+    <div id="searchSection">
+        <h3>Search Student</h3>
+        <input type="text" id="searchRoll" placeholder="Roll to Search">
+        <button onclick="searchStudent()">Search</button>
+    </div>
+
+    <!-- DISPLAY STUDENTS -->
+    <div id="displaySection">
+        <h3>All Students</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Roll</th>
+                    <th>Name</th>
+                    <th>Mark</th>
+                </tr>
+            </thead>
+            <tbody id="studentTable"></tbody>
+        </table>
+        <button onclick="loadStudents()">Refresh Table</button>
+    </div>
+
+    <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+    // ================= CREDENTIALS =====================
+    let credentials = [
+        { username: "admin", password: "admin", role: "admin" },
+        { username: "staff", password: "staff", role: "staff" },
+        { username: "guest", password: "guest", role: "guest" }
+    ];
+
+    let students = JSON.parse(localStorage.getItem("students")) || [];
+    let currentRole = "";
+
+    // ================= LOGIN FUNCTION ==================
+    function login() {
+        let user = document.getElementById("loginUser").value;
+        let pass = document.getElementById("loginPass").value;
+
+        let found = credentials.find(c => c.username === user && c.password === pass);
+        if (!found) {
+            alert("Invalid username or password!");
+            return;
+        }
+
+        currentRole = found.role;
+        document.getElementById("loginPage").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("roleHeading").innerText = "Logged in as: " + currentRole.toUpperCase();
+
+        loadStudents();
+        showControlsForRole();
+    }
+
+    // =============== ROLE-BASED UI ====================
+    function showControlsForRole() {
+        if (currentRole === "guest") {
+            document.getElementById("addForm").style.display = "none";
+            document.getElementById("updateSection").style.display = "none";
+            document.getElementById("deleteSection").style.display = "none";
+        } else if (currentRole === "staff") {
+            document.getElementById("addForm").style.display = "block";
+            document.getElementById("updateSection").style.display = "block";
+            document.getElementById("deleteSection").style.display = "none";
+        } else if (currentRole === "admin") {
+            document.getElementById("addForm").style.display = "block";
+            document.getElementById("updateSection").style.display = "block";
+            document.getElementById("deleteSection").style.display = "block";
+        }
+
+        // Always show display table
+        document.getElementById("displaySection").style.display = "block";
+    }
+
+    // =============== ADD STUDENT ======================
+    function addStudent() {
+        let roll = document.getElementById("roll").value;
+        let name = document.getElementById("name").value;
+        let mark = document.getElementById("mark").value;
+
+        if (!roll || !name || !mark) {
+            alert("Enter all fields!");
+            return;
+        }
+
+        students.push({ roll, name, mark });
+        localStorage.setItem("students", JSON.stringify(students));
+        loadStudents();
+        alert("Student Added!");
+    }
+
+    // =============== DISPLAY STUDENTS =================
+    function loadStudents() {
+        let table = document.getElementById("studentTable");
+        table.innerHTML = "";
+        students.forEach(s => {
+            table.innerHTML += `
+                <tr>
+                    <td>${s.roll}</td>
+                    <td>${s.name}</td>
+                    <td>${s.mark}</td>
+                </tr>
+            `;
+        });
+    }
+
+    // =============== SEARCH STUDENT ===================
+    function searchStudent() {
+        let sr = document.getElementById("searchRoll").value;
+        let result = students.find(s => s.roll == sr);
+
+        if (!result) {
+            alert("Student not found!");
+            return;
+        }
+
+        alert(Found: ${result.roll} - ${result.name} - ${result.mark});
+    }
+
+    // =============== UPDATE STUDENT ===================
+    function updateStudent() {
+        let ur = document.getElementById("updateRoll").value;
+        let newName = document.getElementById("updateName").value;
+        let newMark = document.getElementById("updateMark").value;
+
+        let index = students.findIndex(s => s.roll == ur);
+        if (index === -1) {
+            alert("Roll number not found!");
+            return;
+        }
+
+        students[index].name = newName;
+        students[index].mark = newMark;
+        localStorage.setItem("students", JSON.stringify(students));
+        loadStudents();
+        alert("Student Updated!");
+    }
+
+    // =============== DELETE STUDENT ===================
+    function deleteStudent() {
+        let dr = document.getElementById("deleteRoll").value;
+        let index = students.findIndex(s => s.roll == dr);
+
+        if (index === -1) {
+            alert("Roll number not found!");
+            return;
+        }
+
+        if (!confirm("Are you sure you want to delete this student?"))
+            return;
+
+        students.splice(index, 1);
+        localStorage.setItem("students", JSON.stringify(students));
+        loadStudents();
+        alert("Student Deleted!");
+    }
+
+    // ================= LOGOUT ========================
+    function logout() {
+        currentRole = "";
+        document.getElementById("dashboard").style.display = "none";
+        document.getElementById("loginPage").style.display = "block";
+        document.getElementById("loginUser").value = "";
+        document.getElementById("loginPass").value = "";
+    }
+</script>
+</body>
+</html>
